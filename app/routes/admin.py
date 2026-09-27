@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import csv
 import os
+from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, Body
 
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -57,7 +58,7 @@ from app.services.bulk_onboarding_service import bulk_onboard_users
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin"])
-templates = Jinja2Templates(directory="frontend/templates")
+templates = Jinja2Templates(directory=Path(__file__).resolve().parents[2] / "frontend" / "templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

@@ -22,7 +22,7 @@ This repository contains the extracted CareStance administration surface:
 3. Start the admin service:
 
 	```powershell
-	uvicorn admin_server:app --reload
+	uvicorn admin_server:app --host 0.0.0.0 --port 8000 --reload
 	```
 
 The dashboard is available at `http://127.0.0.1:8000/admin/`.

@@ -1,13 +1,7 @@
 """ASGI entry point for the extracted CareStance admin service."""
 
-import os
-import logging
-from pathlib import Path
-
-import jwt
-from fastapi import Depends, FastAPI, Form, Request
+from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -28,6 +22,11 @@ templates = Jinja2Templates(directory=BASE_DIR / "frontend" / "templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 JWT_SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend" / "static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/admin/", status_code=307)
 
 
 @app.get("/health", tags=["System"])

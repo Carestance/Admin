@@ -2,6 +2,7 @@
 
 import logging
 import os
+from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -19,7 +20,12 @@ JWT_SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions")
 JWT_ALGORITHM = "HS256"
 
 
-def _decode_cookie_user_id(token: str) -> str | None:
+def create_admin_session_token(user_id: int) -> str:
+    """Create the same signed user_id session cookie used by the main CareStance app."""
+    return jwt.encode({"sub": str(user_id)}, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+
+def _decode_cookie_user_id(token: str) -> Optional[str]:
     if not token:
         return None
     try:

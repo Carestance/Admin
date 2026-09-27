@@ -4,7 +4,7 @@ import io
 import json
 import secrets
 import string
-from typing import Any
+from typing import Any, Dict, List
 
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -48,7 +48,7 @@ def generate_secure_password(length: int = 16) -> str:
     return "".join(password)
 
 
-def parse_bulk_onboarding_records(raw_input: Any) -> list[dict[str, Any]]:
+def parse_bulk_onboarding_records(raw_input: Any) -> List[Dict[str, Any]]:
     """Normalize bulk onboarding input from JSON text, CSV text, or a file-like object.
 
     Supports the existing textarea JSON payload and the next requested CSV upload
@@ -113,7 +113,7 @@ def parse_bulk_onboarding_records(raw_input: Any) -> list[dict[str, Any]]:
     return []
 
 
-def build_bulk_onboarding_report(result: dict[str, Any]) -> dict[str, Any]:
+def build_bulk_onboarding_report(result: Dict[str, Any]) -> Dict[str, Any]:
     """Return a clearer reporting view for a bulk onboard operation.
 
     The report is intentionally lightweight: it counts created/skipped/failure
@@ -143,7 +143,7 @@ def build_bulk_onboarding_report(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_bulk_onboarding_plan_assignment() -> dict[str, Any]:
+def get_bulk_onboarding_plan_assignment() -> Dict[str, Any]:
     """Return the default plan model used for bulk ₹300 paid onboarding.
 
     Existing subscription semantics in the app already treat the customised
@@ -169,10 +169,10 @@ def get_bulk_onboarding_plan_assignment() -> dict[str, Any]:
 
 async def bulk_onboard_users(
     db: AsyncSession,
-    user_records: list[dict[str, Any]],
+    user_records: List[Dict[str, Any]],
     send_credentials: bool = False,
     force_email: bool = False,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Create a batch of user accounts and assign the direct paid-plan model.
 
     Each record can carry email, full_name, contact_number, role and optional

@@ -5,7 +5,7 @@ jinja2
 sqlalchemy[asyncio]
 asyncpg
 greenlet
-bcrypt
+bcrypt==4.0.1
 passlib[bcrypt]
 python-multipart
 python-jose[cryptography]

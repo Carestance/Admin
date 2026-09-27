@@ -7,7 +7,8 @@ from __future__ import annotations
 import logging
 import csv
 import os
-from pathlib import Path
+from typing import Dict, List, Optional
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, Body
 
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -17,7 +18,7 @@ from passlib.context import CryptContext
 
 from app.database import get_db
 from app.models import CounsellorProfile, ModerationFlag, Payment, SimulationPayment, Ticket, User
-from app.dependencies.admin_auth import get_current_admin
+from app.dependencies.admin_auth import create_admin_session_token, get_current_admin
 from app.models import AssessmentResult
 from sqlalchemy import func, select
 
@@ -58,8 +59,18 @@ from app.services.bulk_onboarding_service import bulk_onboard_users
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin"])
-templates = Jinja2Templates(directory=Path(__file__).resolve().parents[2] / "frontend" / "templates")
+templates = Jinja2Templates(directory="frontend/templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def admin_login_page(request: Request):
+    return RedirectResponse(url="/login", status_code=307)
+
+
+@router.post("/login")
+async def admin_login_post():
+    return RedirectResponse(url="/login", status_code=307)
 
 
 @router.get("/bulk-onboard-form", response_class=HTMLResponse)
@@ -107,7 +118,7 @@ def _redirect_back(request: Request, default: str = "/admin") -> RedirectRespons
     )
 
 
-def _normalize_career_recommendations(assessment: AssessmentResult | None) -> list[dict]:
+def _normalize_career_recommendations(assessment: Optional[AssessmentResult]) -> List[dict]:
     """Return a stable recommendation list for old and new assessment reports."""
     if not assessment or not assessment.assessment_report:
         return []
@@ -473,8 +484,8 @@ async def api_reset_user_password(
         # We keep this defensive because the repo currently has no existing password-update usage.
         from app.appwrite_client import account as appwrite_account
 
-        update_errors: list[str] = []
-        methods_tried: list[str] = []
+        update_errors: List[str] = []
+        methods_tried: List[str] = []
 
         # Candidate calls
         candidates = [
@@ -484,7 +495,7 @@ async def api_reset_user_password(
             ("account.updateEmailPassword(user_id, password)", lambda: appwrite_account.updateEmailPassword(str(appwrite_account_id), new_password)),
         ]
 
-        last_exc: Exception | None = None
+        last_exc: Optional[Exception] = None
         for label, fn in candidates:
             methods_tried.append(label)
             try:

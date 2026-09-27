@@ -1,6 +1,7 @@
 """ASGI entry point for the extracted CareStance admin service."""
 
 import os
+import logging
 from pathlib import Path
 
 import jwt
@@ -11,11 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import get_db
 from app.models import User
 from app.routes.admin import router as admin_router
 
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CareStance Admin", docs_url="/admin/docs", redoc_url="/admin/redoc")
 app.include_router(admin_router)
@@ -50,7 +53,16 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     normalized_email = email.strip().lower()
-    result = await db.execute(select(User).where(User.email == normalized_email))
+    try:
+        result = await db.execute(select(User).where(User.email == normalized_email))
+    except SQLAlchemyError:
+        logger.exception("Admin login database query failed")
+        return templates.TemplateResponse(
+            request,
+            "admin_login.html",
+            {"error": "Admin database is not configured. Set DATABASE_URL to the CareStance database and redeploy."},
+            status_code=503,
+        )
     user = result.scalar_one_or_none()
     admin_email = os.getenv("ADMIN_EMAIL", "").strip().lower()
     is_admin = user and (user.role == "admin" or (admin_email and user.email.lower() == admin_email))

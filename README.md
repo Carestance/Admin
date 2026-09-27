@@ -17,7 +17,7 @@ This repository contains the extracted CareStance administration surface:
 	pip install -r requirements.txt
 	```
 
-2. Set the same `DATABASE_URL`, `SECRET_KEY`, `ADMIN_EMAIL`, and Appwrite variables used by the CareStance application. Do not commit `.env` files or credentials.
+2. Set the same `DATABASE_URL`, `SECRET_KEY`, `ADMIN_EMAIL`, and Appwrite variables used by the CareStance application. `DATABASE_URL` must point to the existing CareStance database; the local SQLite fallback does not contain admin users. Do not commit `.env` files or credentials.
 
 3. Start the admin service:
 

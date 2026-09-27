@@ -1,27 +1,38 @@
-import asyncio
-import importlib
+import os
+import subprocess
 import sys
 from pathlib import Path
 
-from sqlalchemy import inspect
-
-
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 
-def test_init_db_creates_users_table_for_local_sqlite(monkeypatch, tmp_path):
+def test_init_db_creates_users_table_for_local_sqlite(tmp_path):
     db_path = tmp_path / "admin_local_test.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
-    monkeypatch.delenv("VERCEL", raising=False)
+    environment = os.environ.copy()
+    environment["DATABASE_URL"] = "sqlite+aiosqlite:///" + db_path.as_posix()
+    environment.pop("VERCEL", None)
+    script = """
+import asyncio
+from sqlalchemy import inspect
+from app.database import engine, init_db
 
-    import app.database as database_module
-    importlib.reload(database_module)
+async def main():
+    await init_db()
+    async with engine.connect() as connection:
+        tables = await connection.run_sync(
+            lambda sync_connection: inspect(sync_connection).get_table_names()
+        )
+    await engine.dispose()
+    print('USERS_TABLE_EXISTS={}'.format('users' in tables))
 
-    import app.models  # noqa: F401
-
-    asyncio.run(database_module.init_db())
-
-    inspector = inspect(database_module.engine.sync_engine)
-    assert "users" in inspector.get_table_names()
+asyncio.run(main())
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=str(ROOT),
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "USERS_TABLE_EXISTS=True" in result.stdout

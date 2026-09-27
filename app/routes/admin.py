@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import csv
 import os
+import bcrypt
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, Body
@@ -14,7 +15,6 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, Bod
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from passlib.context import CryptContext
 
 from app.database import get_db
 from app.models import CounsellorProfile, ModerationFlag, Payment, SimulationPayment, Ticket, User
@@ -60,7 +60,6 @@ from app.services.bulk_onboarding_service import bulk_onboard_users
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="frontend/templates")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.get("/login", response_class=HTMLResponse)

@@ -2,6 +2,8 @@
 
 import logging
 import os
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -19,7 +21,17 @@ JWT_SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions")
 JWT_ALGORITHM = "HS256"
 
 
-def _decode_cookie_user_id(token: str) -> str | None:
+def create_admin_session_token(user_id: int) -> str:
+    """Create the same signed user_id session cookie used by the main CareStance app."""
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    return jwt.encode(
+        {"sub": str(user_id), "exp": expires_at},
+        JWT_SECRET_KEY,
+        algorithm=JWT_ALGORITHM,
+    )
+
+
+def _decode_cookie_user_id(token: str) -> Optional[str]:
     if not token:
         return None
     try:
@@ -40,7 +52,7 @@ async def get_current_admin(
     if not raw_cookie:
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
-            headers={"Location": "/login"},
+            headers={"Location": "/admin/login"},
             detail="Login required.",
         )
 
@@ -48,7 +60,7 @@ async def get_current_admin(
     if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
-            headers={"Location": "/login"},
+            headers={"Location": "/admin/login"},
             detail="Invalid session.",
         )
 
@@ -57,7 +69,7 @@ async def get_current_admin(
     except (TypeError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
-            headers={"Location": "/login"},
+            headers={"Location": "/admin/login"},
             detail="Invalid session.",
         )
 
@@ -66,7 +78,7 @@ async def get_current_admin(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
-            headers={"Location": "/login"},
+            headers={"Location": "/admin/login"},
             detail="Login required.",
         )
 

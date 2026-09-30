@@ -1,12 +1,21 @@
 """ASGI entry point for the extracted CareStance admin service."""
 
-from fastapi import FastAPI
+import logging
+import os
+from pathlib import Path
+from typing import Dict
+import jwt
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+load_dotenv()
 
 from app.database import get_db
 from app.models import User
@@ -14,13 +23,13 @@ from app.routes.admin import router as admin_router
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CareStance Admin", docs_url="/admin/docs", redoc_url="/admin/redoc")
-app.include_router(admin_router)
-
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=BASE_DIR / "frontend" / "templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 JWT_SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions")
+
+app = FastAPI(title="CareStance Admin", docs_url="/admin/docs", redoc_url="/admin/redoc")
+app.include_router(admin_router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend" / "static"), name="static")
 
 
@@ -30,18 +39,17 @@ async def root_redirect() -> RedirectResponse:
 
 
 @app.get("/health", tags=["System"])
-async def health() -> dict[str, str]:
+async def health() -> Dict[str, str]:
     return {"status": "ok"}
-
-
-@app.get("/", include_in_schema=False)
-async def root() -> RedirectResponse:
-    return RedirectResponse(url="/admin/", status_code=307)
 
 
 @app.get("/login", include_in_schema=False)
 async def login_page(request: Request):
-    return templates.TemplateResponse(request, "admin_login.html", {"error": None})
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_login.html",
+        context={"error": None},
+    )
 
 
 @app.post("/login", include_in_schema=False)
@@ -57,14 +65,18 @@ async def login(
     except SQLAlchemyError:
         logger.exception("Admin login database query failed")
         return templates.TemplateResponse(
-            request,
-            "admin_login.html",
-            {"error": "Admin database is not configured. Set DATABASE_URL to the CareStance database and redeploy."},
+            request=request,
+            name="admin_login.html",
+            context={"error": "Admin database is not configured. Set DATABASE_URL to the CareStance database and restart."},
             status_code=503,
         )
+
     user = result.scalar_one_or_none()
     admin_email = os.getenv("ADMIN_EMAIL", "").strip().lower()
-    is_admin = user and (user.role == "admin" or (admin_email and user.email.lower() == admin_email))
+    is_admin = user and (
+        user.role == "admin"
+        or (admin_email and user.email.strip().lower() == admin_email)
+    )
 
     password_valid = False
     if user and user.hashed_password:
@@ -75,9 +87,9 @@ async def login(
 
     if not is_admin or getattr(user, "is_suspended", False) or not password_valid:
         return templates.TemplateResponse(
-            request,
-            "admin_login.html",
-            {"error": "Invalid administrator email or password."},
+            request=request,
+            name="admin_login.html",
+            context={"error": "Invalid administrator email or password."},
             status_code=401,
         )
 
@@ -87,7 +99,7 @@ async def login(
         "user_id",
         token,
         httponly=True,
-        secure=True,
+        secure=request.url.scheme == "https",
         samesite="lax",
         max_age=60 * 60 * 8,
         path="/",

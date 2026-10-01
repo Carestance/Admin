@@ -19,6 +19,8 @@ This repository contains the extracted CareStance administration surface:
 
 2. Set the same `DATABASE_URL`, `SECRET_KEY`, `ADMIN_EMAIL`, and Appwrite variables used by the CareStance application. `DATABASE_URL` must point to the existing CareStance database; the local SQLite fallback does not contain admin users. Do not commit `.env` files or credentials.
 
+   To enable Google sign-in, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI`. Register `https://<your-admin-host>/auth/google/callback` as an authorized redirect URI in Google Cloud. The callback only signs in an existing, non-suspended admin user (by `users.role = 'admin'` or matching `ADMIN_EMAIL`); it does not create accounts. Set `SESSION_COOKIE_SECURE=true` when serving over HTTPS.
+
 3. Start the admin service:
 
 	```powershell

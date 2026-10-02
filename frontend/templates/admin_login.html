@@ -14,6 +14,11 @@
     input { box-sizing: border-box; width: 100%; padding: 12px 13px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
     input:focus { outline: 3px solid rgba(45, 108, 223, .18); border-color: #2d6cdf; }
     button { width: 100%; margin-top: 24px; padding: 12px; border: 0; border-radius: 8px; background: #163b70; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    .google-button { display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; width: 100%; margin-top: 18px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #253247; font: inherit; font-weight: 650; text-decoration: none; }
+    .google-button:hover { background: #f8fafc; }
+    .google-mark { font-weight: 800; color: #4285f4; }
+    .separator { display: flex; align-items: center; gap: 12px; margin-top: 22px; color: #8793a5; font-size: 12px; }
+    .separator::before, .separator::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
     .error { padding: 11px 12px; border-radius: 8px; background: #fff0f0; color: #a12626; font-size: 14px; }
   </style>
 </head>
@@ -22,6 +27,10 @@
     <h1>CareStance Admin</h1>
     <p>Sign in with your administrator account.</p>
     {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+    {% if google_login_enabled %}
+    <a class="google-button" href="/auth/google"><span class="google-mark" aria-hidden="true">G</span>Continue with Google</a>
+    <div class="separator" aria-hidden="true">or use email</div>
+    {% endif %}
     <form method="post" action="/login">
       <label for="email">Email</label>
       <input id="email" name="email" type="email" autocomplete="username" required>
